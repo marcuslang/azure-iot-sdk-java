@@ -28,7 +28,7 @@ public class ServiceClientIT
     private static String content = "abcdefghijklmnopqrstuvwxyz1234567890";
 
     //connection string to server with untrustworthy certificates. Service should throw an exception when connecting to it
-    private static String IOT_HUB_CONNECTION_STRING_ENV_VAR_NAME = "IOTHUB_DEVICE_CONN_STRING_INVALIDCERT";
+    private static String UNTRUSTWORTHY_IOT_HUB_CONNECTION_STRING_ENV_VAR_NAME = "IOTHUB_DEVICE_CONN_STRING_INVALIDCERT";
 
     @Before
     public void setUp()
@@ -158,14 +158,14 @@ public class ServiceClientIT
     @Test
     public void serviceclientValidatesRemoteCertificate() throws IOException
     {
-        String invalidCertificateServerConnectionString = retrieveEnvironmentVariableValue(IOT_HUB_CONNECTION_STRING_ENV_VAR_NAME);
+        String invalidCertificateServerConnectionString = retrieveEnvironmentVariableValue(UNTRUSTWORTHY_IOT_HUB_CONNECTION_STRING_ENV_VAR_NAME);
         
         ServiceClient serviceClient = ServiceClient.createFromConnectionString(invalidCertificateServerConnectionString, IotHubServiceClientProtocol.AMQPS);
 
         try
         {
             serviceClient.open();
-            serviceClient.send("11", new Message("adsf"));
+            serviceClient.send(deviceId, new Message("adsf"));
         }
         catch (IotHubException e)
         {
