@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
+import static com.microsoft.azure.sdk.iot.service.Tools.*;
 import static org.junit.Assert.assertEquals;
+import static tests.integration.com.microsoft.azure.sdk.iot.helpers.Tools.retrieveEnvironmentVariableValue;
 
 public class ServiceClientIT
 {
@@ -24,6 +26,9 @@ public class ServiceClientIT
     private static String connectionString = "";
     private static String deviceId = "java-service-client-e2e-test";
     private static String content = "abcdefghijklmnopqrstuvwxyz1234567890";
+
+    //connection string to server with untrustworthy certificates. Service should throw an exception when connecting to it
+    private static String IOT_HUB_CONNECTION_STRING_ENV_VAR_NAME = "IOTHUB_DEVICE_CONN_STRING_INVALIDCERT";
 
     @Before
     public void setUp()
@@ -42,11 +47,12 @@ public class ServiceClientIT
     }
 
     @Test
+    @Ignore
     public void service_client_e2e_ampqs() throws Exception
     {
         IotHubServiceClientProtocol protocol = IotHubServiceClientProtocol.AMQPS;
 
-        if (Tools.isNullOrEmpty(connectionString))
+        if (isNullOrEmpty(connectionString))
         {
             throw new IllegalArgumentException("Environment variable is not set: " + connectionStringEnvVarName);
         }
@@ -96,11 +102,12 @@ public class ServiceClientIT
     }
 
     @Test
+    @Ignore
     public void service_client_e2e_amqps_ws() throws Exception
     {
         IotHubServiceClientProtocol protocol = IotHubServiceClientProtocol.AMQPS_WS;
 
-        if (Tools.isNullOrEmpty(connectionString))
+        if (isNullOrEmpty(connectionString))
         {
             throw new IllegalArgumentException("Environment variable is not set: " + connectionStringEnvVarName);
         }
@@ -146,5 +153,23 @@ public class ServiceClientIT
         assertEquals(1, deviceGetAfter.getCloudToDeviceMessageCount());
 
         registryManager.close();
+    }
+
+    @Test
+    public void serviceclientValidatesRemoteCertificate() throws IOException
+    {
+        String invalidCertificateServerConnectionString = retrieveEnvironmentVariableValue(IOT_HUB_CONNECTION_STRING_ENV_VAR_NAME);
+        
+        ServiceClient serviceClient = ServiceClient.createFromConnectionString(invalidCertificateServerConnectionString, IotHubServiceClientProtocol.AMQPS);
+
+        try
+        {
+            serviceClient.open();
+            serviceClient.send("11", new Message("adsf"));
+        }
+        catch (IotHubException e)
+        {
+            e.printStackTrace();
+        }
     }
 }
